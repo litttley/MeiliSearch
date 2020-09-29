@@ -8,7 +8,7 @@ pub mod option;
 pub mod routes;
 pub mod analytics;
 pub mod snapshot;
-pub mod backup;
+pub mod dump;
 
 use actix_http::Error;
 use actix_service::ServiceFactory;
@@ -57,7 +57,7 @@ pub fn create_app(
         .configure(routes::health::services)
         .configure(routes::stats::services)
         .configure(routes::key::services)
-        .configure(routes::backup::services)
+        .configure(routes::dump::services)
 }
 
 pub fn index_update_callback_txn(index: Index, index_uid: &str, data: &Data, mut writer: &mut MainWriter) -> Result<(), String> {
