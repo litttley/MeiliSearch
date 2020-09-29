@@ -157,7 +157,7 @@ pub fn import_dump(
     dump_path: &Path,
     document_batch_size: usize,
 ) -> Result<(), Error> {
-    eprintln!("Import dump from {:?}", dump_path);
+    eprintln!("Importing dump from {:?}...", dump_path);
 
     // create a temporary directory
     let tmp_dir = TempDir::new()?;
