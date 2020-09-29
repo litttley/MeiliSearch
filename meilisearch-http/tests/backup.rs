@@ -165,11 +165,11 @@ async fn backup_metadata_should_be_valid() {
     
     let uid = trigger_and_wait_backup(&mut server).await;
 
-    let backup_folder = Path::new(&server.data().backup_folder);
+    let backups_folder = Path::new(&server.data().backups_folder);
     let tmp_dir = TempDir::new().unwrap();
     let tmp_dir_path = tmp_dir.path();
 
-    compression::from_tar_gz(&backup_folder.join(&format!("{}.tar.gz", uid)), tmp_dir_path).unwrap();
+    compression::from_tar_gz(&backups_folder.join(&format!("{}.tar.gz", uid)), tmp_dir_path).unwrap();
 
     let file = File::open(tmp_dir_path.join("metadata.json")).unwrap();
     let mut metadata: serde_json::Value = serde_json::from_reader(file).unwrap();
@@ -206,9 +206,9 @@ async fn backup_gzip_should_have_been_created() {
     
 
     let backup_uid = trigger_and_wait_backup(&mut server).await;
-    let backup_folder = Path::new(&server.data().backup_folder);
+    let backups_folder = Path::new(&server.data().backups_folder);
 
-    let compressed_path = backup_folder.join(format!("{}.tar.gz", backup_uid));
+    let compressed_path = backups_folder.join(format!("{}.tar.gz", backup_uid));
     assert!(File::open(compressed_path).is_ok());
 }
 
@@ -280,11 +280,11 @@ async fn backup_index_settings_should_be_valid() {
 
     let uid = trigger_and_wait_backup(&mut server).await;
 
-    let backup_folder = Path::new(&server.data().backup_folder);
+    let backups_folder = Path::new(&server.data().backups_folder);
     let tmp_dir = TempDir::new().unwrap();
     let tmp_dir_path = tmp_dir.path();
 
-    compression::from_tar_gz(&backup_folder.join(&format!("{}.tar.gz", uid)), tmp_dir_path).unwrap();
+    compression::from_tar_gz(&backups_folder.join(&format!("{}.tar.gz", uid)), tmp_dir_path).unwrap();
 
     let file = File::open(tmp_dir_path.join("test").join("settings.json")).unwrap();
     let settings: serde_json::Value = serde_json::from_reader(file).unwrap();
@@ -304,11 +304,11 @@ async fn backup_index_documents_should_be_valid() {
 
     let uid = trigger_and_wait_backup(&mut server).await;
 
-    let backup_folder = Path::new(&server.data().backup_folder);
+    let backups_folder = Path::new(&server.data().backups_folder);
     let tmp_dir = TempDir::new().unwrap();
     let tmp_dir_path = tmp_dir.path();
 
-    compression::from_tar_gz(&backup_folder.join(&format!("{}.tar.gz", uid)), tmp_dir_path).unwrap();
+    compression::from_tar_gz(&backups_folder.join(&format!("{}.tar.gz", uid)), tmp_dir_path).unwrap();
 
     let file = File::open(tmp_dir_path.join("test").join("documents.jsonl")).unwrap();
     let documents = read_all_jsonline(file);
@@ -328,11 +328,11 @@ async fn backup_index_updates_should_be_valid() {
 
     let uid = trigger_and_wait_backup(&mut server).await;
 
-    let backup_folder = Path::new(&server.data().backup_folder);
+    let backups_folder = Path::new(&server.data().backups_folder);
     let tmp_dir = TempDir::new().unwrap();
     let tmp_dir_path = tmp_dir.path();
 
-    compression::from_tar_gz(&backup_folder.join(&format!("{}.tar.gz", uid)), tmp_dir_path).unwrap();
+    compression::from_tar_gz(&backups_folder.join(&format!("{}.tar.gz", uid)), tmp_dir_path).unwrap();
 
     let file = File::open(tmp_dir_path.join("test").join("updates.jsonl")).unwrap();
     let mut updates = read_all_jsonline(file);

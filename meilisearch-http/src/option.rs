@@ -117,8 +117,8 @@ pub struct Opt {
     pub snapshot_interval_sec: Option<u64>,
 
     /// Folder where backups are created when the backup route is called.
-    #[structopt(long, env = "MEILI_backup_folder", default_value = "backups/")]
-    pub backup_folder: PathBuf,
+    #[structopt(long, env = "MEILI_BACKUPS_FOLDER", default_value = "backups/")]
+    pub backups_folder: PathBuf,
 
     /// Import a backup from the specified path, must be a `.tar.gz` file.
     #[structopt(long, env = "MEILI_IMPORT_BACKUP", conflicts_with = "load-from-snapshot")]

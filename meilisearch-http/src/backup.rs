@@ -95,7 +95,7 @@ fn settings_to_path(settings: &Settings, folder_path: &Path) -> Result<(), Error
 /// Import settings and documents of a backup with version `BackupVersion::V1` in specified index.
 fn import_index_v1(
     data: &Data,
-    backup_folder: &Path,
+    backups_folder: &Path,
     index_uid: &str,
     document_batch_size: usize,
     write_txn: &mut MainWriter,
@@ -108,7 +108,7 @@ fn import_index_v1(
         .ok_or(Error::index_not_found(index_uid))?;
 
     // index folder path in  backup folder
-    let index_path = &backup_folder.join(index_uid);
+    let index_path = &backups_folder.join(index_uid);
 
     // extract `settings.json` file and import content
     let settings = settings_from_path(&index_path)?;
@@ -143,21 +143,28 @@ fn import_index_v1(
         apply_documents_addition(write_txn, &index, values)?;
     }
 
+    // sync index information: stats, updated_at, last_update
+    if let Err(e) = crate::index_update_callback_txn(index, index_uid, data, write_txn) {
+        return Err(Error::Internal(e));
+    }
+
     Ok(())
 }
 
-/// Import backup from `backup_folder` in database.
+/// Import backup from `backup_path` in database.
 pub fn import_backup(
     data: &Data,
-    backup_folder: &Path,
+    backup_path: &Path,
     document_batch_size: usize,
 ) -> Result<(), Error> {
+    eprintln!("Import backup from {:?}", backup_path);
+
     // create a temporary directory
     let tmp_dir = TempDir::new()?;
     let tmp_dir_path = tmp_dir.path();
 
     // extract backup in temporary directory
-    compression::from_tar_gz(backup_folder, tmp_dir_path)?;
+    compression::from_tar_gz(backup_path, tmp_dir_path)?;
 
     // read backup metadata
     let metadata = BackupMetadata::from_path(&tmp_dir_path)?;
@@ -184,6 +191,7 @@ pub fn import_backup(
         Ok(())
     })?;
 
+    eprintln!("Backup importation from {:?} succeed", backup_path);
     Ok(())
 }
 
@@ -231,12 +239,12 @@ impl BackupInfo {
 
 /// Generate uid from creation date
 fn generate_uid() -> String {
-    Utc::now().format("%Y%m%d-%H%M%S").to_string()
+    Utc::now().format("%Y%m%d-%H%M%S%3f").to_string()
 }
 
-/// Infer backup_folder from backup_uid
-pub fn compressed_backup_folder(backup_folder: &Path, backup_uid: &str) -> PathBuf {
-    backup_folder.join(format!("{}.tar.gz", backup_uid))
+/// Infer backups_folder from backup_uid
+pub fn compressed_backups_folder(backups_folder: &Path, backup_uid: &str) -> PathBuf {
+    backups_folder.join(format!("{}.tar.gz", backup_uid))
 }
 
 /// Write metadata in backup
@@ -298,7 +306,7 @@ fn fail_backup_process<E: std::error::Error>(backup_info: BackupInfo, context: &
 }
 
 /// Main function of backup.
-fn backup_process(data: web::Data<Data>, backup_folder: PathBuf, backup_info: BackupInfo) {
+fn backup_process(data: web::Data<Data>, backups_folder: PathBuf, backup_info: BackupInfo) {
     // open read transaction on Update
     let update_reader = match data.db.update_read_txn() {
         Ok(r) => r,
@@ -371,8 +379,8 @@ fn backup_process(data: web::Data<Data>, backup_folder: PathBuf, backup_info: Ba
         }
     }
 
-    // compress backup in a file named `{backup_uid}.tar.gz` in `backup_folder`
-    if let Err(e) = crate::helpers::compression::to_tar_gz(&tmp_dir_path, &compressed_backup_folder(&backup_folder, &backup_info.uid)) {
+    // compress backup in a file named `{backup_uid}.tar.gz` in `backups_folder`
+    if let Err(e) = crate::helpers::compression::to_tar_gz(&tmp_dir_path, &compressed_backups_folder(&backups_folder, &backup_info.uid)) {
         fail_backup_process(backup_info, "compressing backup", e);
         return ;
     }
@@ -386,8 +394,8 @@ fn backup_process(data: web::Data<Data>, backup_folder: PathBuf, backup_info: Ba
     resume.set_current();
 }
 
-pub fn init_backup_process(data: &web::Data<Data>, backup_folder: &Path) -> Result<BackupInfo, Error> {
-    create_dir_all(backup_folder).or(Err(Error::backup_failed()))?;
+pub fn init_backup_process(data: &web::Data<Data>, backups_folder: &Path) -> Result<BackupInfo, Error> {
+    create_dir_all(backups_folder).or(Err(Error::backup_failed()))?;
 
     // check if a backup is already in progress
     if let Some(resume) = BackupInfo::get_current() {
@@ -405,11 +413,11 @@ pub fn init_backup_process(data: &web::Data<Data>, backup_folder: &Path) -> Resu
     info.set_current();
 
     let data = data.clone();
-    let backup_folder = backup_folder.to_path_buf();
+    let backups_folder = backups_folder.to_path_buf();
     let info_cloned = info.clone();
     // run backup process in a new thread
     thread::spawn(move || 
-        backup_process(data, backup_folder, info_cloned)
+        backup_process(data, backups_folder, info_cloned)
     );
 
     Ok(info)

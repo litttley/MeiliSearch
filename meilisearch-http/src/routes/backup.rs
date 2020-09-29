@@ -5,7 +5,7 @@ use actix_web::{get, post};
 use actix_web::{HttpResponse, web};
 use serde::{Deserialize, Serialize};
 
-use crate::backup::{BackupInfo, BackupStatus, compressed_backup_folder, init_backup_process};
+use crate::backup::{BackupInfo, BackupStatus, compressed_backups_folder, init_backup_process};
 use crate::Data;
 use crate::error::{Error, ResponseError};
 use crate::helpers::Authentication;
@@ -19,8 +19,8 @@ pub fn services(cfg: &mut web::ServiceConfig) {
 async fn trigger_backup(
     data: web::Data<Data>,
 ) -> Result<HttpResponse, ResponseError> {
-    let backup_folder = Path::new(&data.backup_folder);
-    match init_backup_process(&data, &backup_folder) {
+    let backups_folder = Path::new(&data.backups_folder);
+    match init_backup_process(&data, &backups_folder) {
         Ok(resume) => Ok(HttpResponse::Accepted().json(resume)),
         Err(e) => Err(e.into())
     }
@@ -42,7 +42,7 @@ async fn get_backup_status(
     data: web::Data<Data>,
     path: web::Path<BackupParam>,
 ) -> Result<HttpResponse, ResponseError> {
-    let backup_folder = Path::new(&data.backup_folder);
+    let backups_folder = Path::new(&data.backups_folder);
     let backup_uid = &path.backup_uid;
 
     if let Some(resume) = BackupInfo::get_current() {
@@ -51,7 +51,7 @@ async fn get_backup_status(
         }
     }
 
-    if File::open(compressed_backup_folder(Path::new(backup_folder), backup_uid)).is_ok() {
+    if File::open(compressed_backups_folder(Path::new(backups_folder), backup_uid)).is_ok() {
         let resume = BackupInfo::new(
             backup_uid.into(),
             BackupStatus::Done
