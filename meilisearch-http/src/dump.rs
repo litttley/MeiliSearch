@@ -7,7 +7,7 @@ use std::thread;
 use actix_web::web;
 use chrono::offset::Utc;
 use indexmap::IndexMap;
-use log::error;
+use log::{error, info};
 use meilisearch_core::{MainWriter, MainReader, UpdateReader};
 use meilisearch_core::settings::Settings;
 use meilisearch_core::update::{apply_settings_update, apply_documents_addition};
@@ -157,7 +157,7 @@ pub fn import_dump(
     dump_path: &Path,
     document_batch_size: usize,
 ) -> Result<(), Error> {
-    eprintln!("Importing dump from {:?}...", dump_path);
+    info!("Importing dump from {:?}...", dump_path);
 
     // create a temporary directory
     let tmp_dir = TempDir::new()?;
@@ -191,7 +191,7 @@ pub fn import_dump(
         Ok(())
     })?;
 
-    eprintln!("Dump importation from {:?} succeed", dump_path);
+    info!("Dump importation from {:?} succeed", dump_path);
     Ok(())
 }
 

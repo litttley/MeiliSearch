@@ -134,7 +134,6 @@ async fn get_dump_status_should_return_done() {
 
     assert_eq!(status_code, 202);
 
-    println!("{:?}", value);
     let dump_uid = value["uid"].as_str().unwrap().to_string();
     
     let expected = json!({
